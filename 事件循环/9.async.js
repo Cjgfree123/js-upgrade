@@ -30,7 +30,7 @@
 
 /**
  * 做错了: 
- * async函数没有返回值，它实际上返回了一个立即解决的Promise。
+ *  async函数没有返回值，它实际上返回了一个立即解决的Promise。
  *  这意味着，一旦async2执行完毕，async1将会继续执行。
  */
 // async function async1() {
