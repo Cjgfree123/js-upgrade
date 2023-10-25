@@ -1,8 +1,7 @@
 # js-upgrade
 js核心概念进阶
 
-当前进展到：异步->事件循环 done~
-
+# 事件循环
 
 ## promise
 
@@ -10,6 +9,7 @@ js核心概念进阶
 
 1. Promise是个类。
 2. promise内部是同步任务，会立即执行。
+3. 当状态扭转后，才会将then回调放入微任务队列.
 
 ### then/catch
 
@@ -17,24 +17,6 @@ js核心概念进阶
 2. 主任务优先级高于异步队列中任务，即高于微任务。
 3. catch返回值会被透传, 会间隔透传
 
-### 错误捕获
-
-1. promise需要手动捕捉错误，添加.catch或外层try catch, 否则会引起js报错阻塞运行。例如下面：
-
-```
-async function fn(){
-    await Promise.reject('err~').catch((err) => {
-        console.log('手动捕获错误: ', err);
-    });
-    console.log('xxx');
-}
-fn();
-
-// 会报错:
-[UnhandledPromiseRejection: This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). The promise rejected with the reason "err~".] {
-  code: 'ERR_UNHANDLED_REJECTION'
-}
-```
 
 ### 链式调用
 
@@ -74,6 +56,10 @@ p1.then(() => {
 })
 ```
 
+2. catch.then链式调用，then会读取catch的返回值（如果没有返回，则读取到的是un）
+3. 值透传:
+- then透传需要满足：入参为函数+返回普通值/不返回(返回undefined)
+
 ### finally
 
 1. finally不参与值透传
@@ -82,9 +68,22 @@ p1.then(() => {
 
 1. promise.all即使提前失败了，已经进行中的任务并不会取消
 
+### allSettled
+
+1. 返回每个promise实例的完成态结果，类似如下:
+
+```js
+{ status: 'fulfilled', value: 111 },
+{ status: 'rejected', reason: 111 }
+```
+
+2. 特点:
+- 即使提前失败了，已经进行中的任务并不会取消.
+- 入参中只要有一个是pending状态(没完成), Promise.allSettled就会一直等待。
+
 ### promise.resolve/reject
 
-1. promise.resolve本身是同步的, 但是如果要读取到值需要.then/.catch。
+1. promise.resolve/reject本身是同步的, 但是如果要读取到值需要.then/.catch, 而then/catch属于微任务。
 
 ```
 new Promise((resolve, reject) => { // 相当于Promise.resolve('xx').then(val => console.log(val));
@@ -134,7 +133,7 @@ async function fn(){
 
 ### 返回值
 
-1. 返回一个Promise。
+1. 实际生效返回值, 一定是promise形态。
     - 如果不是promise形态，则转为promise。（如下示例）
     - 如果没有返回值，则相当于返回`Promise<undefined>`。
 
@@ -144,3 +143,22 @@ async function fn(){
 }
 fn().then(val => console.log(val)); // 333
 ```
+
+
+## 异步编程——错误捕获
+
+1. 常用:
+- promise需要手动捕捉错误, 否则会报错未捕捉的promise, 阻塞js运行。 捕捉方式: 手动写.catch.
+- async/await捕捉错误方式: try catch.
+
+2. async函数中抛出错误, 相当于执行return new Promise.reject('error message');
+
+```
+async function foo() {
+    throw new Error("error message")
+    console.log("foo function end~") // 这里不会再走到
+}
+```
+
+3. 其他:
+- throw new Error会阻塞js执行。
